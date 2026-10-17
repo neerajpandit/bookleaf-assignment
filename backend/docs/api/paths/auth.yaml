@@ -1,0 +1,217 @@
+/csrf-token:
+  get:
+    tags:
+      - Authentication
+    summary: Issue CSRF token
+    description: |
+      Issues a CSRF token for state-changing authentication requests.
+
+      Sets a non-HttpOnly `bookleaf_csrf` cookie and returns the same token in the
+      response body. Clients must send the token in the `x-csrf-token` header when
+      calling `POST /auth/register`, `POST /auth/login`, and `POST /auth/logout`.
+    operationId: getAuthCsrfToken
+    responses:
+      '200':
+        description: CSRF token issued
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/CsrfTokenResponse'
+
+/register:
+  post:
+    tags:
+      - Authentication
+    summary: Register an eligible author account
+    description: |
+      Creates an author account using a pre-provisioned one-time invitation token.
+
+      Registration requirements:
+      - Email and `authorId` must match an unused, unexpired invitation record
+      - The invitation token must match the stored bcrypt hash
+      - Password must meet validation requirements
+      - The `AUTHOR` role is assigned server-side; client-supplied roles are ignored
+      - Administrator accounts cannot be created through this endpoint
+    operationId: registerAuthor
+    security:
+      - CsrfHeader: []
+    parameters:
+      - $ref: '../components/parameters/auth.yaml#/CsrfHeaderParameter'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/RegisterRequest'
+    responses:
+      '201':
+        description: Author account created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/RegisterSuccessResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '403':
+        description: Invalid or missing CSRF token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '409':
+        description: Account already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ConflictResponse'
+
+/login:
+  post:
+    tags:
+      - Authentication
+    summary: Authenticate with email and password
+    description: |
+      Authenticates a user and stores the JWT in an HttpOnly `bookleaf_access_token`
+      cookie. The JWT is **not** returned in the JSON body.
+
+      Returns a generic `Invalid email or password` message for unknown accounts,
+      invalid passwords, and inactive accounts.
+
+      Rate limited to reduce credential-guessing attacks.
+    operationId: login
+    security:
+      - CsrfHeader: []
+    parameters:
+      - $ref: '../components/parameters/auth.yaml#/CsrfHeaderParameter'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/auth.yaml#/LoginRequest'
+    responses:
+      '200':
+        description: Login successful; HttpOnly auth cookie set
+        headers:
+          Set-Cookie:
+            description: HttpOnly JWT session cookie
+            schema:
+              type: string
+              example: bookleaf_access_token=eyJhbGciOi...; Path=/; HttpOnly; SameSite=Lax
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/LoginSuccessResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Invalid credentials or inactive account
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Invalid or missing CSRF token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '429':
+        description: Too many login attempts
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/RateLimitResponse'
+
+/me:
+  get:
+    tags:
+      - Authentication
+    summary: Get current authenticated user
+    description: Returns the profile of the currently authenticated user.
+    operationId: getCurrentUser
+    security:
+      - CookieAuth: []
+    responses:
+      '200':
+        description: Current user profile
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/MeSuccessResponse'
+      '401':
+        description: Missing, invalid, expired, or revoked token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+
+/logout:
+  post:
+    tags:
+      - Authentication
+    summary: Log out current session
+    description: |
+      Clears the authentication cookie and increments the user's server-side
+      `tokenVersion`, which invalidates previously issued JWTs.
+
+      Clearing the browser cookie does not revoke a JWT that was copied elsewhere.
+    operationId: logout
+    security:
+      - CookieAuth: []
+      - CsrfHeader: []
+    parameters:
+      - $ref: '../components/parameters/auth.yaml#/CsrfHeaderParameter'
+    responses:
+      '200':
+        description: Logout successful; auth cookie cleared
+        headers:
+          Set-Cookie:
+            description: Cleared auth cookie
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/LogoutSuccessResponse'
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Invalid or missing CSRF token
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+
+/test/admin-only:
+  get:
+    tags:
+      - Authentication
+    summary: Admin authorization test route
+    description: Internal test route used to verify admin-only authorization middleware.
+    operationId: adminOnlyTestRoute
+    security:
+      - CookieAuth: []
+    responses:
+      '200':
+        description: Admin access granted
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ApiSuccessResponse'
+      '401':
+        description: Not authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated but not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'

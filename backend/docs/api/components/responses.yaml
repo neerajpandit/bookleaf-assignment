@@ -1,0 +1,29 @@
+BadRequest:
+  description: Validation failed or malformed request
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/ErrorResponse'
+      example:
+        success: false
+        message: Validation failed
+        details:
+          - field: message
+            message: '"message" length must be at least 3 characters long'
+
+NotFound:
+  description: Route not found
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/NotFoundResponse'
+
+InternalServerError:
+  description: Unexpected server error
+  content:
+    application/json:
+      schema:
+        $ref: './schemas/common.yaml#/ErrorResponse'
+      example:
+        success: false
+        message: Internal server error

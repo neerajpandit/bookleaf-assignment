@@ -1,0 +1,316 @@
+/collection:
+  get:
+    tags:
+      - Tickets
+    summary: List authenticated author's tickets
+    description: |
+      Returns a paginated list of support tickets belonging to the authenticated author.
+
+      Ownership is enforced in the database query. Internal notes, AI errors, and other
+      authors' tickets are never returned.
+    operationId: listAuthorTickets
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+            - OPEN
+            - IN_PROGRESS
+            - RESOLVED
+            - CLOSED
+      - name: category
+        in: query
+        schema:
+          type: string
+          enum:
+            - Royalty & Payments
+            - ISBN & Metadata Issues
+            - Printing & Quality
+            - Distribution & Availability
+            - Book Status & Production Updates
+            - General Inquiry
+      - name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+        description: Matches ticket number or subject for the authenticated author
+    responses:
+      '200':
+        description: Paginated list of author tickets
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/ticket.yaml#/TicketListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+  post:
+    tags:
+      - Tickets
+    summary: Create a support ticket
+    description: |
+      Creates a new support ticket for the authenticated author and stores the initial
+      public message from the supplied description.
+
+      Ticket numbers are generated atomically via the Counter model starting at `TKT-1001`.
+      Category and priority remain unset until AI/admin workflows are implemented in later steps.
+    operationId: createAuthorTicket
+    security:
+      - CookieAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ticket.yaml#/CreateTicketRequest'
+          examples:
+            bookSpecific:
+              summary: Book-specific ticket
+              value:
+                subject: Royalty payout question
+                description: I have not received my latest royalty payout.
+                bookId: BK001
+            generalAccount:
+              summary: General account ticket
+              value:
+                subject: Update my contact details
+                description: Please update my phone number on file.
+                categoryContext: GENERAL_ACCOUNT
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - subject
+              - description
+            properties:
+              subject:
+                type: string
+              description:
+                type: string
+              bookId:
+                type: string
+              categoryContext:
+                type: string
+                enum:
+                  - BOOK_SPECIFIC
+                  - GENERAL_ACCOUNT
+              attachment:
+                type: string
+                format: binary
+                description: Optional PDF, PNG, JPG, GIF, or TXT file up to 5 MB
+    responses:
+      '201':
+        description: Ticket created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/ticket.yaml#/CreateTicketResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Referenced book not found for the authenticated author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/attachment:
+  get:
+    tags:
+      - Tickets
+    summary: Download a ticket attachment
+    description: |
+      Streams the optional attachment associated with a ticket owned by the authenticated author.
+      Storage keys and internal paths are never exposed.
+    operationId: downloadAuthorTicketAttachment
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    responses:
+      '200':
+        description: Attachment file stream
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket or attachment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+
+/detail:
+  get:
+    tags:
+      - Tickets
+    summary: Get author ticket details
+    description: |
+      Returns one ticket and its public conversation messages when the ticket belongs to
+      the authenticated author. Internal notes and AI-only metadata are omitted.
+    operationId: getAuthorTicketById
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          example: 665f1c2d3a4b5c6d7e8f9012
+    responses:
+      '200':
+        description: Ticket details with public messages
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/ticket.yaml#/TicketDetailResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found for the authenticated author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/messages:
+  post:
+    tags:
+      - Tickets
+    summary: Add an author follow-up message
+    description: |
+      Adds a public follow-up message to an eligible ticket owned by the authenticated author.
+
+      Messages cannot be added to closed tickets. Resolved tickets accept follow-ups without
+      automatic status changes.
+    operationId: addAuthorTicketMessage
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+          example: 665f1c2d3a4b5c6d7e8f9012
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/ticket.yaml#/CreateTicketMessageRequest'
+    responses:
+      '201':
+        description: Message created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/ticket.yaml#/CreateTicketMessageResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found for the authenticated author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '409':
+        description: Ticket is closed and cannot accept new messages
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

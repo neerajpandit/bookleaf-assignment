@@ -1,0 +1,33 @@
+
+# Dependencies anywhere in the repository
+**/node_modules/
+
+# Environment secrets
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+
+# Build output
+**/dist/
+**/build/
+
+# Test artifacts
+**/coverage/
+**/.nyc_output/
+
+# Logs
+**/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE files
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.bak

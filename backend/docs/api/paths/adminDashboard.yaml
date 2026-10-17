@@ -1,0 +1,46 @@
+/ticket-sections:
+  get:
+    tags:
+      - Admin Tickets
+    summary: Dashboard ticket sections
+    description: |
+      Returns bounded dashboard sections computed across the full authorized admin ticket
+      dataset: urgent unresolved tickets, oldest unresolved tickets, and recently updated tickets.
+
+      Urgent tickets include open or in-progress tickets with CRITICAL or HIGH priority,
+      sorted by priority rank then recent activity. Oldest unresolved tickets exclude resolved
+      and closed statuses and are sorted by creation time ascending.
+    operationId: getAdminDashboardTicketSections
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+    responses:
+      '200':
+        description: Dashboard ticket sections
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminDashboardTicketSectionsResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

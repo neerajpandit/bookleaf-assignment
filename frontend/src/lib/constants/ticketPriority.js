@@ -1,0 +1,10 @@
+export const TICKET_PRIORITIES = {
+  CRITICAL: 'CRITICAL',
+  HIGH: 'HIGH',
+  MEDIUM: 'MEDIUM',
+  LOW: 'LOW',
+};
+
+export const TICKET_PRIORITY_VALUES = Object.values(TICKET_PRIORITIES);
+
+export default TICKET_PRIORITIES;

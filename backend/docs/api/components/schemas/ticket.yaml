@@ -1,0 +1,212 @@
+TicketBookSummary:
+  type: object
+  nullable: true
+  properties:
+    bookId:
+      type: string
+      example: BK001
+    title:
+      type: string
+      example: Whispers of the Ganges
+
+PublicTicket:
+  type: object
+  properties:
+    id:
+      type: string
+      example: 665f1c2d3a4b5c6d7e8f9012
+    ticketNumber:
+      type: string
+      example: TKT-1001
+    subject:
+      type: string
+      example: Royalty payout question
+    description:
+      type: string
+      example: I have not received my latest royalty payout.
+    status:
+      type: string
+      enum:
+        - OPEN
+        - IN_PROGRESS
+        - RESOLVED
+        - CLOSED
+      example: OPEN
+    category:
+      type: string
+      nullable: true
+      example: null
+    priority:
+      type: string
+      nullable: true
+      example: null
+    book:
+      $ref: '#/TicketBookSummary'
+    attachment:
+      $ref: '#/PublicTicketAttachment'
+      nullable: true
+    lastMessageAt:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+PublicTicketMessage:
+  type: object
+  properties:
+    id:
+      type: string
+      example: 665f1c2d3a4b5c6d7e8f9099
+    body:
+      type: string
+      example: Following up on my earlier message.
+    senderRole:
+      type: string
+      enum:
+        - AUTHOR
+        - ADMIN
+      example: AUTHOR
+    senderName:
+      type: string
+      nullable: true
+      example: Priya Sharma
+    createdAt:
+      type: string
+      format: date-time
+
+PublicTicketDetail:
+  allOf:
+    - $ref: '#/PublicTicket'
+    - type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/PublicTicketMessage'
+
+PublicTicketAttachment:
+  type: object
+  properties:
+    originalFilename:
+      type: string
+      example: royalty-statement.pdf
+    mimeType:
+      type: string
+      example: application/pdf
+    sizeBytes:
+      type: integer
+      example: 24576
+    uploadedAt:
+      type: string
+      format: date-time
+
+CreateTicketRequest:
+  type: object
+  required:
+    - subject
+    - description
+  properties:
+    subject:
+      type: string
+      minLength: 1
+      maxLength: 200
+      example: Royalty payout question
+    description:
+      type: string
+      minLength: 1
+      maxLength: 5000
+      example: I have not received my latest royalty payout.
+    bookId:
+      type: string
+      pattern: '^BK\d{3}$'
+      example: BK001
+      description: Optional source book identifier belonging to the authenticated author
+    categoryContext:
+      type: string
+      enum:
+        - BOOK_SPECIFIC
+        - GENERAL_ACCOUNT
+      description: |
+        Optional ticket context. When omitted, `BOOK_SPECIFIC` is inferred when `bookId`
+        is supplied; otherwise `GENERAL_ACCOUNT` is used.
+
+CreateTicketMessageRequest:
+  type: object
+  required:
+    - body
+  properties:
+    body:
+      type: string
+      minLength: 1
+      maxLength: 10000
+      example: Following up on my earlier message.
+
+CreateTicketData:
+  type: object
+  properties:
+    ticket:
+      $ref: '#/PublicTicket'
+    initialMessage:
+      $ref: '#/PublicTicketMessage'
+
+CreateTicketResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/CreateTicketData'
+
+TicketListData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/PublicTicket'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+TicketListResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/TicketListData'
+
+TicketDetailResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ticket:
+              $ref: '#/PublicTicketDetail'
+
+CreateTicketMessageData:
+  type: object
+  properties:
+    message:
+      $ref: '#/PublicTicketMessage'
+    lastMessageAt:
+      type: string
+      format: date-time
+
+CreateTicketMessageResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/CreateTicketMessageData'

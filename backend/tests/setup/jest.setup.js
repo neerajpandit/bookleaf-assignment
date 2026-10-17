@@ -1,0 +1,11 @@
+process.env.NODE_ENV = 'test';
+process.env.PORT = '5001';
+process.env.MONGODB_URI = 'mongodb://127.0.0.1:27017/bookleaf-test';
+process.env.CLIENT_URL = 'http://localhost:3000';
+process.env.JWT_SECRET = 'test-jwt-secret-minimum-32-characters-long';
+process.env.JWT_EXPIRES_IN = '1h';
+process.env.JWT_ISSUER = 'bookleaf-api-test';
+process.env.JWT_AUDIENCE = 'bookleaf-portal-test';
+process.env.COOKIE_SAME_SITE = 'lax';
+process.env.AUTH_COOKIE_PATH = '/';
+process.env.LOGIN_RATE_LIMIT_MAX = '1000';

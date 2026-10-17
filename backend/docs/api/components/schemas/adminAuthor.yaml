@@ -1,0 +1,142 @@
+AdminAuthorListItem:
+  type: object
+  properties:
+    authorUserId:
+      type: string
+      description: MongoDB User `_id` for the author account
+      example: 665f1c2d3a4b5c6d7e8f9012
+    authorId:
+      type: string
+      description: Source author identifier from the assignment dataset
+      example: AUTH001
+    name:
+      type: string
+      nullable: true
+    email:
+      type: string
+    phone:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    joinedDate:
+      type: string
+      format: date-time
+      nullable: true
+    bookCount:
+      type: integer
+      minimum: 0
+    openTicketCount:
+      type: integer
+      minimum: 0
+      description: Tickets with status OPEN or IN_PROGRESS
+    pendingTicketCount:
+      type: integer
+      minimum: 0
+      description: Tickets with status OPEN only
+
+AdminAuthorProfile:
+  allOf:
+    - $ref: '#/AdminAuthorListItem'
+    - type: object
+      properties:
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+AdminAuthorBook:
+  allOf:
+    - type: object
+      properties:
+        id:
+          type: string
+          description: MongoDB Book `_id`
+    - $ref: './book.yaml#/Book'
+
+AdminAuthorDirectoryData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminAuthorListItem'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+AdminAuthorDirectoryResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminAuthorDirectoryData'
+
+AdminAuthorDetailResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            author:
+              $ref: '#/AdminAuthorProfile'
+
+AdminAuthorBooksData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminAuthorBook'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+AdminAuthorBooksResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminAuthorBooksData'
+
+AdminAuthorRoyaltySummary:
+  type: object
+  properties:
+    totalRoyaltyEarned:
+      type: number
+      description: Sum of `totalRoyaltyEarned` across the author's books
+    totalRoyaltyPaid:
+      type: number
+      description: Sum of `royaltyPaid` across the author's books
+    totalRoyaltyPending:
+      type: number
+      description: Sum of `royaltyPending` across the author's books
+    lastRoyaltyPayoutDate:
+      type: string
+      format: date-time
+      nullable: true
+      description: Latest non-null `lastRoyaltyPayoutDate` across the author's books
+
+AdminAuthorRoyaltySummaryResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            summary:
+              $ref: '#/AdminAuthorRoyaltySummary'

@@ -1,0 +1,101 @@
+ApiSuccessResponse:
+  type: object
+  required:
+    - success
+    - statusCode
+    - message
+  properties:
+    success:
+      type: boolean
+      example: true
+    statusCode:
+      type: integer
+      example: 200
+    message:
+      type: string
+      example: Success
+    data:
+      nullable: true
+      description: Response payload. Shape varies by endpoint.
+
+ErrorResponse:
+  type: object
+  required:
+    - success
+    - message
+  properties:
+    success:
+      type: boolean
+      example: false
+    message:
+      type: string
+      example: Validation failed
+    details:
+      type: array
+      items:
+        $ref: '#/ValidationErrorDetail'
+
+ValidationErrorDetail:
+  type: object
+  required:
+    - field
+    - message
+  properties:
+    field:
+      type: string
+      example: message
+    message:
+      type: string
+      example: '"message" length must be at least 3 characters long'
+
+HealthStatusData:
+  type: object
+  required:
+    - uptime
+    - database
+  properties:
+    uptime:
+      type: number
+      format: double
+      description: Process uptime in seconds
+      example: 12.345
+    database:
+      type: string
+      enum:
+        - connected
+        - disconnected
+      example: connected
+
+HealthSuccessResponse:
+  allOf:
+    - $ref: '#/ApiSuccessResponse'
+    - type: object
+      properties:
+        statusCode:
+          example: 200
+        message:
+          example: Service is healthy
+        data:
+          $ref: '#/HealthStatusData'
+
+HealthUnavailableResponse:
+  allOf:
+    - $ref: '#/ApiSuccessResponse'
+    - type: object
+      properties:
+        success:
+          example: false
+        statusCode:
+          example: 503
+        message:
+          example: Service unavailable
+        data:
+          $ref: '#/HealthStatusData'
+
+NotFoundResponse:
+  allOf:
+    - $ref: '#/ErrorResponse'
+    - type: object
+      properties:
+        message:
+          example: 'Route not found: GET /api/v1/unknown'

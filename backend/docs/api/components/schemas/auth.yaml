@@ -1,0 +1,168 @@
+RegisterRequest:
+  type: object
+  required:
+    - email
+    - authorId
+    - invitationToken
+    - password
+  properties:
+    email:
+      type: string
+      format: email
+      example: author.test@bookleaf.test
+    authorId:
+      type: string
+      example: AUTH001
+      description: Source author identifier that must match a pre-provisioned invitation
+    invitationToken:
+      type: string
+      minLength: 16
+      example: one-time-invitation-token-from-operations-team
+      description: One-time activation token provided through a secure out-of-band channel
+    password:
+      type: string
+      format: password
+      minLength: 8
+      example: SecurePass1
+      description: Must contain at least one letter and one number
+
+LoginRequest:
+  type: object
+  required:
+    - email
+    - password
+  properties:
+    email:
+      type: string
+      format: email
+      example: author.test@bookleaf.test
+    password:
+      type: string
+      format: password
+      example: SecurePass1
+
+PublicUser:
+  type: object
+  properties:
+    id:
+      type: string
+      example: 665f1c2e3b1c9a4d8f0e1234
+    email:
+      type: string
+      format: email
+    role:
+      type: string
+      enum:
+        - AUTHOR
+        - ADMIN
+    authorId:
+      type: string
+      nullable: true
+      example: AUTH001
+    name:
+      type: string
+      nullable: true
+    phone:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    joinedDate:
+      type: string
+      format: date-time
+      nullable: true
+    isActive:
+      type: boolean
+
+AuthUserResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/PublicUser'
+
+CsrfTokenResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            csrfToken:
+              type: string
+              example: 0123456789abcdef...
+
+RegisterSuccessResponse:
+  allOf:
+    - $ref: '#/AuthUserResponse'
+    - type: object
+      properties:
+        statusCode:
+          example: 201
+        message:
+          example: Author account created successfully
+
+LoginSuccessResponse:
+  allOf:
+    - $ref: '#/AuthUserResponse'
+    - type: object
+      properties:
+        message:
+          example: Login successful
+
+MeSuccessResponse:
+  allOf:
+    - $ref: '#/AuthUserResponse'
+    - type: object
+      properties:
+        message:
+          example: Current user profile
+
+LogoutSuccessResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        message:
+          example: Logout successful
+        data:
+          nullable: true
+          example: null
+
+UnauthorizedResponse:
+  allOf:
+    - $ref: './common.yaml#/ErrorResponse'
+    - type: object
+      properties:
+        message:
+          example: Invalid email or password
+
+ForbiddenResponse:
+  allOf:
+    - $ref: './common.yaml#/ErrorResponse'
+    - type: object
+      properties:
+        message:
+          example: Insufficient permissions
+
+ConflictResponse:
+  allOf:
+    - $ref: './common.yaml#/ErrorResponse'
+    - type: object
+      properties:
+        message:
+          example: An account already exists for this author
+
+RateLimitResponse:
+  allOf:
+    - $ref: './common.yaml#/ErrorResponse'
+    - type: object
+      properties:
+        message:
+          example: Too many login attempts. Please try again later.

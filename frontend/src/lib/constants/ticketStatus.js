@@ -1,0 +1,10 @@
+export const TICKET_STATUSES = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+};
+
+export const TICKET_STATUS_VALUES = Object.values(TICKET_STATUSES);
+
+export default TICKET_STATUSES;

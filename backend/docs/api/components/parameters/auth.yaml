@@ -1,0 +1,7 @@
+CsrfHeaderParameter:
+  name: x-csrf-token
+  in: header
+  required: true
+  description: CSRF token matching the `bookleaf_csrf` cookie
+  schema:
+    type: string

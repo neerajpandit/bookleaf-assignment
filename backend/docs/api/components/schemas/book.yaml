@@ -1,0 +1,114 @@
+Book:
+  type: object
+  properties:
+    bookId:
+      type: string
+      example: BK001
+    title:
+      type: string
+      example: Whispers of the Ganges
+    isbn:
+      type: string
+      example: 978-93-5XXXX-01-1
+    genre:
+      type: string
+      example: Literary Fiction
+    publicationDate:
+      type: string
+      format: date-time
+      nullable: true
+    status:
+      type: string
+      enum:
+        - Published & Live
+        - In Production - Cover Design
+        - In Production - Typesetting
+    mrp:
+      type: number
+      nullable: true
+      example: 399
+    authorRoyaltyPerCopy:
+      type: number
+      nullable: true
+      example: 35
+    totalCopiesSold:
+      type: number
+      example: 342
+    totalRoyaltyEarned:
+      type: number
+      example: 11970
+    royaltyPaid:
+      type: number
+      example: 8400
+    royaltyPending:
+      type: number
+      example: 3570
+    lastRoyaltyPayoutDate:
+      type: string
+      format: date-time
+      nullable: true
+    printPartner:
+      type: string
+      nullable: true
+      example: In-House
+    availableOn:
+      type: array
+      items:
+        type: string
+      example:
+        - Amazon India
+        - Flipkart
+        - BookLeaf Store
+
+PaginationMeta:
+  type: object
+  required:
+    - page
+    - limit
+    - total
+    - totalPages
+  properties:
+    page:
+      type: integer
+      example: 1
+    limit:
+      type: integer
+      example: 10
+    total:
+      type: integer
+      example: 2
+    totalPages:
+      type: integer
+      example: 1
+
+BookListData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/Book'
+    pagination:
+      $ref: '#/PaginationMeta'
+
+BookListResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/BookListData'
+
+BookDetailResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            book:
+              $ref: '#/Book'

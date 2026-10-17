@@ -1,0 +1,632 @@
+/queue:
+  get:
+    tags:
+      - Admin Tickets
+    summary: List the admin ticket queue
+    description: |
+      Returns a paginated, filterable ticket queue for administrators.
+
+      Filters are applied in MongoDB before pagination. Use `assignedTo=unassigned`
+      to retrieve tickets without an assignee.
+
+      Search matches ticket number, subject, and author name/email.
+
+      Use `authorId` to filter by the author's MongoDB User `_id` (24-character hex).
+    operationId: listAdminTicketQueue
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+            - OPEN
+            - IN_PROGRESS
+            - RESOLVED
+            - CLOSED
+      - name: category
+        in: query
+        schema:
+          type: string
+          enum:
+            - Royalty & Payments
+            - ISBN & Metadata Issues
+            - Printing & Quality
+            - Distribution & Availability
+            - Book Status & Production Updates
+            - General Inquiry
+      - name: priority
+        in: query
+        schema:
+          type: string
+          enum:
+            - CRITICAL
+            - HIGH
+            - MEDIUM
+            - LOW
+      - name: assignedTo
+        in: query
+        schema:
+          oneOf:
+            - type: string
+              enum:
+                - unassigned
+            - type: string
+              pattern: '^[a-f0-9]{24}$'
+      - name: dateFrom
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: dateTo
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: authorId
+        in: query
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+        description: Filter tickets by the author's MongoDB User `_id`
+      - name: aiProcessingStatus
+        in: query
+        schema:
+          type: string
+          enum:
+            - PENDING
+            - IN_PROGRESS
+            - COMPLETED
+            - FAILED
+            - SKIPPED
+        description: Filter tickets by AI processing lifecycle status
+    responses:
+      '200':
+        description: Admin ticket queue
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminTicketQueueResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/assignment:
+  patch:
+    tags:
+      - Admin Tickets
+    summary: Assign or unassign a ticket
+    operationId: updateAdminTicketAssignment
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/adminTicket.yaml#/AdminTicketAssignmentRequest'
+    responses:
+      '200':
+        description: Ticket assignment updated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminTicketUpdateResponse'
+      '400':
+        description: Invalid assignee or request body
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/status:
+  patch:
+    tags:
+      - Admin Tickets
+    summary: Update ticket status
+    description: |
+      Updates ticket status using the documented admin transition policy.
+      Sets `resolvedAt` when entering RESOLVED and `closedAt` when entering CLOSED.
+      CLOSED is terminal.
+    operationId: updateAdminTicketStatus
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/adminTicket.yaml#/AdminTicketStatusRequest'
+    responses:
+      '200':
+        description: Ticket status updated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminTicketUpdateResponse'
+      '400':
+        description: Invalid status transition or request body
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/classification:
+  patch:
+    tags:
+      - Admin Tickets
+    summary: Override ticket category and/or priority
+    description: |
+      Manually overrides the operational category and/or priority fields.
+      AI classification fields (`aiCategory`, `aiPriority`) are preserved.
+    operationId: updateAdminTicketClassification
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/adminTicket.yaml#/AdminTicketClassificationRequest'
+    responses:
+      '200':
+        description: Ticket classification updated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminTicketUpdateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/messages:
+  get:
+    tags:
+      - Admin Tickets
+    summary: List public ticket messages
+    description: |
+      Returns paginated public conversation messages for a ticket.
+
+      Internal notes are never included in this response.
+    operationId: listAdminTicketMessages
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+    responses:
+      '200':
+        description: Public ticket messages
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminMessageListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+  post:
+    tags:
+      - Admin Tickets
+    summary: Send a public admin reply
+    description: |
+      Adds a public reply to the ticket conversation visible to the author.
+
+      Closed tickets reject new replies. Ticket status is not changed automatically.
+    operationId: sendAdminTicketReply
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/adminTicket.yaml#/AdminPublicReplyRequest'
+    responses:
+      '201':
+        description: Public reply created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminPublicReplyResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '409':
+        description: Ticket is closed and cannot accept new messages
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/detail:
+  get:
+    tags:
+      - Admin Tickets
+    summary: Get full admin ticket detail
+    description: |
+      Returns full ticket detail including AI classification metadata, draft response,
+      and processing status. Internal notes are not included; use the notes endpoint.
+    operationId: getAdminTicketDetail
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    responses:
+      '200':
+        description: Admin ticket detail
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminTicketDetailResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/ai-draft:
+  post:
+    tags:
+      - Admin Tickets
+    summary: Regenerate AI draft response
+    description: |
+      Re-runs AI analysis for the ticket using the configured provider.
+      Operational category and priority overrides are preserved; AI fields are refreshed.
+      Requires AI_PROVIDER and provider credentials to be configured.
+    operationId: regenerateAdminTicketAiDraft
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    responses:
+      '200':
+        description: AI draft regenerated
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminAiDraftResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '502':
+        description: AI provider request failed
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '503':
+        description: AI processing is not configured
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/ErrorResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/notes:
+  get:
+    tags:
+      - Admin Tickets
+    summary: List private internal notes
+    description: |
+      Returns paginated administrator-only internal notes for a ticket.
+
+      Authors cannot access this endpoint or see these notes in author-facing APIs.
+    operationId: listAdminInternalNotes
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+    responses:
+      '200':
+        description: Internal notes
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminInternalNoteListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+  post:
+    tags:
+      - Admin Tickets
+    summary: Create a private internal note
+    description: |
+      Adds an administrator-only internal note. Does not update `lastMessageAt`
+      or change ticket status, category, priority, or assignment.
+    operationId: createAdminInternalNote
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: ticketId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../components/schemas/adminTicket.yaml#/AdminInternalNoteRequest'
+    responses:
+      '201':
+        description: Internal note created
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminTicket.yaml#/AdminInternalNoteCreateResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Ticket not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

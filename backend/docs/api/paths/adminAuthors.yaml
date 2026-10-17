@@ -1,0 +1,236 @@
+/directory:
+  get:
+    tags:
+      - Admin Authors
+    summary: List authors for the admin directory
+    description: |
+      Returns a paginated directory of author accounts with book and ticket counts.
+
+      Only users with role `AUTHOR` are included. Search matches name, email, or source
+      author ID (`AUTH001`). Ticket counts use:
+      - `openTicketCount`: status OPEN or IN_PROGRESS
+      - `pendingTicketCount`: status OPEN only
+    operationId: listAdminAuthors
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      - name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+      - name: sortBy
+        in: query
+        schema:
+          type: string
+          enum:
+            - name
+            - email
+            - authorId
+            - joinedDate
+            - createdAt
+          default: name
+      - name: sortOrder
+        in: query
+        schema:
+          type: string
+          enum:
+            - asc
+            - desc
+          default: asc
+    responses:
+      '200':
+        description: Paginated author directory
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminAuthor.yaml#/AdminAuthorDirectoryResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/detail:
+  get:
+    tags:
+      - Admin Authors
+    summary: Get author profile details
+    operationId: getAdminAuthorDetail
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: authorUserId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    responses:
+      '200':
+        description: Author profile
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminAuthor.yaml#/AdminAuthorDetailResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Author not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/books:
+  get:
+    tags:
+      - Admin Authors
+    summary: List an author's books
+    description: |
+      Returns books scoped to the selected author's MongoDB user ID.
+      Financial values are returned as stored; they are not recalculated.
+    operationId: listAdminAuthorBooks
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: authorUserId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
+          maxLength: 200
+    responses:
+      '200':
+        description: Author books
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminAuthor.yaml#/AdminAuthorBooksResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Author not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/royalty-summary:
+  get:
+    tags:
+      - Admin Authors
+    summary: Get aggregate royalty summary for an author
+    description: |
+      Aggregates stored royalty fields from the author's books only.
+      Does not create payment transactions or infer individual payouts.
+      No currency field is defined in the current schema.
+    operationId: getAdminAuthorRoyaltySummary
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: authorUserId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^[a-f0-9]{24}$'
+    responses:
+      '200':
+        description: Royalty summary
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/adminAuthor.yaml#/AdminAuthorRoyaltySummaryResponse'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an administrator
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Author not found
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

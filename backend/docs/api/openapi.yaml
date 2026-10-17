@@ -1,0 +1,191 @@
+openapi: 3.0.3
+info:
+  title: BookLeaf Author Support API
+  version: 1.0.0
+  description: |
+    REST API for the BookLeaf Publishing Author Support & Communication Portal.
+
+    ## Authentication
+
+    Browser clients authenticate with an **HttpOnly cookie** (`bookleaf_access_token`)
+    containing a signed JWT. The JWT is not returned in JSON response bodies.
+
+    State-changing authentication requests require CSRF protection using:
+    - `GET /api/v1/auth/csrf-token`
+    - Header: `x-csrf-token`
+    - Cookie: `bookleaf_csrf`
+
+    Frontend requests must use credentialed CORS (`credentials: 'include'`) against
+    the configured `CLIENT_URL` origin.
+
+    Proposed but not yet implemented endpoints are listed in
+    `docs/api/endpoint-inventory.md`.
+
+servers:
+  - url: http://localhost:5000
+    description: Local development (default port from PORT env variable)
+  - url: /
+    description: Relative to the current host
+
+tags:
+  - name: System
+    description: Application readiness and infrastructure endpoints
+  - name: Authentication
+    description: Registration, login, session, and profile endpoints
+  - name: Books
+    description: Author book catalog endpoints
+  - name: Tickets
+    description: Author support ticket endpoints
+  - name: Admin Tickets
+    description: Administrator ticket queue and management endpoints
+  - name: Admin Authors
+    description: Administrator author directory and profile endpoints
+
+paths:
+  /api/v1/health:
+    $ref: './paths/health.yaml'
+  /api/v1/auth/csrf-token:
+    $ref: './paths/auth.yaml#/~1csrf-token'
+  /api/v1/auth/register:
+    $ref: './paths/auth.yaml#/~1register'
+  /api/v1/auth/login:
+    $ref: './paths/auth.yaml#/~1login'
+  /api/v1/auth/me:
+    $ref: './paths/auth.yaml#/~1me'
+  /api/v1/auth/logout:
+    $ref: './paths/auth.yaml#/~1logout'
+  /api/v1/auth/test/admin-only:
+    $ref: './paths/auth.yaml#/~1test~1admin-only'
+  /api/v1/books:
+    $ref: './paths/books.yaml#/~1list'
+  /api/v1/books/{bookId}:
+    $ref: './paths/books.yaml#/~1bookId'
+  /api/v1/tickets:
+    $ref: './paths/tickets.yaml#/~1collection'
+  /api/v1/tickets/{ticketId}:
+    $ref: './paths/tickets.yaml#/~1detail'
+  /api/v1/tickets/{ticketId}/messages:
+    $ref: './paths/tickets.yaml#/~1messages'
+  /api/v1/admin/authors:
+    $ref: './paths/adminAuthors.yaml#/~1directory'
+  /api/v1/admin/authors/{authorUserId}:
+    $ref: './paths/adminAuthors.yaml#/~1detail'
+  /api/v1/admin/authors/{authorUserId}/books:
+    $ref: './paths/adminAuthors.yaml#/~1books'
+  /api/v1/admin/authors/{authorUserId}/royalty-summary:
+    $ref: './paths/adminAuthors.yaml#/~1royalty-summary'
+  /api/v1/admin/dashboard/ticket-sections:
+    $ref: './paths/adminDashboard.yaml#/~1ticket-sections'
+  /api/v1/admin/tickets:
+    $ref: './paths/admin.yaml#/~1queue'
+  /api/v1/admin/tickets/{ticketId}/assignment:
+    $ref: './paths/admin.yaml#/~1assignment'
+  /api/v1/admin/tickets/{ticketId}/status:
+    $ref: './paths/admin.yaml#/~1status'
+  /api/v1/admin/tickets/{ticketId}/classification:
+    $ref: './paths/admin.yaml#/~1classification'
+  /api/v1/admin/tickets/{ticketId}/messages:
+    $ref: './paths/admin.yaml#/~1messages'
+  /api/v1/admin/tickets/{ticketId}/notes:
+    $ref: './paths/admin.yaml#/~1notes'
+  /api/v1/admin/tickets/{ticketId}:
+    $ref: './paths/admin.yaml#/~1detail'
+  /api/v1/admin/tickets/{ticketId}/ai/draft:
+    $ref: './paths/admin.yaml#/~1ai-draft'
+
+components:
+  securitySchemes:
+    CookieAuth:
+      $ref: './components/securitySchemes.yaml#/CookieAuth'
+    CsrfHeader:
+      $ref: './components/securitySchemes.yaml#/CsrfHeader'
+  schemas:
+    ApiSuccessResponse:
+      $ref: './components/schemas/common.yaml#/ApiSuccessResponse'
+    ErrorResponse:
+      $ref: './components/schemas/common.yaml#/ErrorResponse'
+    ValidationErrorDetail:
+      $ref: './components/schemas/common.yaml#/ValidationErrorDetail'
+    HealthStatusData:
+      $ref: './components/schemas/common.yaml#/HealthStatusData'
+    HealthSuccessResponse:
+      $ref: './components/schemas/common.yaml#/HealthSuccessResponse'
+    HealthUnavailableResponse:
+      $ref: './components/schemas/common.yaml#/HealthUnavailableResponse'
+    NotFoundResponse:
+      $ref: './components/schemas/common.yaml#/NotFoundResponse'
+    RegisterRequest:
+      $ref: './components/schemas/auth.yaml#/RegisterRequest'
+    LoginRequest:
+      $ref: './components/schemas/auth.yaml#/LoginRequest'
+    PublicUser:
+      $ref: './components/schemas/auth.yaml#/PublicUser'
+    Book:
+      $ref: './components/schemas/book.yaml#/Book'
+    BookListResponse:
+      $ref: './components/schemas/book.yaml#/BookListResponse'
+    BookDetailResponse:
+      $ref: './components/schemas/book.yaml#/BookDetailResponse'
+    PublicTicket:
+      $ref: './components/schemas/ticket.yaml#/PublicTicket'
+    PublicTicketMessage:
+      $ref: './components/schemas/ticket.yaml#/PublicTicketMessage'
+    CreateTicketRequest:
+      $ref: './components/schemas/ticket.yaml#/CreateTicketRequest'
+    CreateTicketResponse:
+      $ref: './components/schemas/ticket.yaml#/CreateTicketResponse'
+    TicketListResponse:
+      $ref: './components/schemas/ticket.yaml#/TicketListResponse'
+    TicketDetailResponse:
+      $ref: './components/schemas/ticket.yaml#/TicketDetailResponse'
+    CreateTicketMessageRequest:
+      $ref: './components/schemas/ticket.yaml#/CreateTicketMessageRequest'
+    CreateTicketMessageResponse:
+      $ref: './components/schemas/ticket.yaml#/CreateTicketMessageResponse'
+    AdminTicket:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicket'
+    AdminTicketQueueResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicketQueueResponse'
+    AdminDashboardTicketSectionsResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminDashboardTicketSectionsResponse'
+    AdminTicketAssignmentRequest:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicketAssignmentRequest'
+    AdminTicketStatusRequest:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicketStatusRequest'
+    AdminTicketClassificationRequest:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicketClassificationRequest'
+    AdminTicketUpdateResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminTicketUpdateResponse'
+    AdminMessageListResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminMessageListResponse'
+    AdminPublicReplyRequest:
+      $ref: './components/schemas/adminTicket.yaml#/AdminPublicReplyRequest'
+    AdminPublicReplyResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminPublicReplyResponse'
+    AdminInternalNote:
+      $ref: './components/schemas/adminTicket.yaml#/AdminInternalNote'
+    AdminInternalNoteRequest:
+      $ref: './components/schemas/adminTicket.yaml#/AdminInternalNoteRequest'
+    AdminInternalNoteListResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminInternalNoteListResponse'
+    AdminInternalNoteCreateResponse:
+      $ref: './components/schemas/adminTicket.yaml#/AdminInternalNoteCreateResponse'
+    AdminAuthorListItem:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorListItem'
+    AdminAuthorProfile:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorProfile'
+    AdminAuthorDirectoryResponse:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorDirectoryResponse'
+    AdminAuthorDetailResponse:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorDetailResponse'
+    AdminAuthorBooksResponse:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorBooksResponse'
+    AdminAuthorRoyaltySummaryResponse:
+      $ref: './components/schemas/adminAuthor.yaml#/AdminAuthorRoyaltySummaryResponse'
+  responses:
+    BadRequest:
+      $ref: './components/responses.yaml#/BadRequest'
+    NotFound:
+      $ref: './components/responses.yaml#/NotFound'
+    InternalServerError:
+      $ref: './components/responses.yaml#/InternalServerError'

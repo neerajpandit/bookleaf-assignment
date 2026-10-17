@@ -1,0 +1,119 @@
+/list:
+  get:
+    tags:
+      - Books
+    summary: List authenticated author's books
+    description: |
+      Returns a paginated list of books belonging to the authenticated author.
+
+      Ownership is determined from the authenticated session — client-supplied author
+      identifiers are not accepted for authorization.
+
+      Supports optional filtering by production status and case-insensitive title search.
+    operationId: listAuthorBooks
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 10
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+            - Published & Live
+            - In Production - Cover Design
+            - In Production - Typesetting
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+        description: Case-insensitive partial match against book title
+    responses:
+      '200':
+        description: Paginated list of author books
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/book.yaml#/BookListResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'
+
+/bookId:
+  get:
+    tags:
+      - Books
+    summary: Get a single author book
+    description: |
+      Returns one book by source book identifier if it belongs to the authenticated author.
+
+      Returns `404 Book not found` when the identifier does not exist for this author,
+      without revealing whether the book belongs to another author.
+    operationId: getAuthorBookById
+    security:
+      - CookieAuth: []
+    parameters:
+      - name: bookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: '^BK\d{3}$'
+          example: BK001
+    responses:
+      '200':
+        description: Book details
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/book.yaml#/BookDetailResponse'
+      '400':
+        $ref: '../components/responses.yaml#/BadRequest'
+      '401':
+        description: Authentication required or invalid session
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/UnauthorizedResponse'
+      '403':
+        description: Authenticated user is not an author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/auth.yaml#/ForbiddenResponse'
+      '404':
+        description: Book not found for the authenticated author
+        content:
+          application/json:
+            schema:
+              $ref: '../components/schemas/common.yaml#/NotFoundResponse'
+      '500':
+        $ref: '../components/responses.yaml#/InternalServerError'

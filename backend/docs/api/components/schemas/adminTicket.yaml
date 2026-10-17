@@ -1,0 +1,424 @@
+AdminAuthorSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      example: 665f1c2d3a4b5c6d7e8f9012
+    name:
+      type: string
+      nullable: true
+      example: Priya Sharma
+    email:
+      type: string
+      example: priya.sharma@email.com
+    authorId:
+      type: string
+      nullable: true
+      example: AUTH001
+
+AdminAssigneeSummary:
+  type: object
+  nullable: true
+  properties:
+    id:
+      type: string
+      example: 665f1c2d3a4b5c6d7e8f9099
+    name:
+      type: string
+      nullable: true
+      example: Support Admin
+    email:
+      type: string
+      example: admin@bookleaf.com
+
+AdminTicketBookSummary:
+  type: object
+  nullable: true
+  properties:
+    bookId:
+      type: string
+      example: BK001
+    title:
+      type: string
+      example: Whispers of the Ganges
+
+AdminTicket:
+  type: object
+  properties:
+    id:
+      type: string
+    ticketNumber:
+      type: string
+      example: TKT-1001
+    subject:
+      type: string
+    description:
+      type: string
+    status:
+      type: string
+      enum:
+        - OPEN
+        - IN_PROGRESS
+        - RESOLVED
+        - CLOSED
+    category:
+      type: string
+      nullable: true
+    priority:
+      type: string
+      nullable: true
+      description: Effective priority used by the queue and dashboard
+    priorityOverride:
+      type: boolean
+      description: Whether the effective priority was manually overridden
+    aiCategory:
+      type: string
+      nullable: true
+      description: Preserved suggested category from policy rules or AI
+    aiPriority:
+      type: string
+      nullable: true
+      description: Preserved suggested priority from policy rules or AI
+    suggestedCategory:
+      type: string
+      nullable: true
+      description: Detail response alias for aiCategory
+    suggestedPriority:
+      type: string
+      nullable: true
+      description: Detail response alias for aiPriority
+    suggestionReason:
+      type: string
+      nullable: true
+    suggestionSource:
+      type: string
+      nullable: true
+      enum:
+        - policy_rules
+        - openai
+    suggestedAt:
+      type: string
+      format: date-time
+      nullable: true
+    priorityOverrideReason:
+      type: string
+      nullable: true
+    priorityOverriddenBy:
+      $ref: '#/AdminAssigneeSummary'
+    priorityOverriddenAt:
+      type: string
+      format: date-time
+      nullable: true
+    aiProcessingStatus:
+      type: string
+      enum:
+        - PENDING
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+        - SKIPPED
+    aiConfigured:
+      type: boolean
+      description: Whether AI draft generation is available on the server right now
+    aiDraftResponse:
+      type: string
+      nullable: true
+    aiPriorityRationale:
+      type: string
+      nullable: true
+    aiKnowledgeBaseReferences:
+      type: array
+      items:
+        type: string
+    aiNeedsHumanReview:
+      type: boolean
+      nullable: true
+    aiProvider:
+      type: string
+      nullable: true
+      description: AI provider used for the latest completed analysis
+    aiModel:
+      type: string
+      nullable: true
+      description: Model name used for the latest completed analysis
+    aiProcessedAt:
+      type: string
+      format: date-time
+      nullable: true
+    aiError:
+      type: string
+      nullable: true
+      description: Sanitized failure reason when AI processing failed
+    author:
+      $ref: '#/AdminAuthorSummary'
+    book:
+      $ref: '#/AdminTicketBookSummary'
+    assignedAdmin:
+      $ref: '#/AdminAssigneeSummary'
+    lastMessageAt:
+      type: string
+      format: date-time
+      nullable: true
+    resolvedAt:
+      type: string
+      format: date-time
+      nullable: true
+    closedAt:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+
+AdminTicketQueueData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminTicket'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+AdminTicketQueueResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminTicketQueueData'
+
+AdminTicketAssignmentRequest:
+  type: object
+  required:
+    - assignedTo
+  properties:
+    assignedTo:
+      type: string
+      nullable: true
+      pattern: '^[a-f0-9]{24}$'
+      description: Active administrator user ID, or null to unassign
+
+AdminTicketStatusRequest:
+  type: object
+  required:
+    - status
+  properties:
+    status:
+      type: string
+      enum:
+        - OPEN
+        - IN_PROGRESS
+        - RESOLVED
+        - CLOSED
+      description: |
+        Target status. CLOSED is terminal. Allowed transitions:
+        - OPEN -> IN_PROGRESS, RESOLVED, CLOSED
+        - IN_PROGRESS -> OPEN, RESOLVED, CLOSED
+        - RESOLVED -> IN_PROGRESS, CLOSED
+        - CLOSED -> (none)
+
+AdminTicketClassificationRequest:
+  type: object
+  properties:
+    category:
+      type: string
+      enum:
+        - Royalty & Payments
+        - ISBN & Metadata Issues
+        - Printing & Quality
+        - Distribution & Availability
+        - Book Status & Production Updates
+        - General Inquiry
+    priority:
+      type: string
+      enum:
+        - CRITICAL
+        - HIGH
+        - MEDIUM
+        - LOW
+    priorityOverrideReason:
+      type: string
+      maxLength: 500
+    clearPriorityOverride:
+      type: boolean
+      description: Restore the effective priority from the latest suggested priority
+  minProperties: 1
+
+AdminTicketUpdateResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ticket:
+              $ref: '#/AdminTicket'
+
+AdminTicketDetailResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ticket:
+              $ref: '#/AdminTicket'
+
+AdminAiDraftResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            ticket:
+              $ref: '#/AdminTicket'
+
+AdminPublicReplyRequest:
+  type: object
+  required:
+    - body
+  properties:
+    body:
+      type: string
+      minLength: 1
+      maxLength: 10000
+      example: We have reviewed your payout and will process it shortly.
+
+AdminInternalNoteRequest:
+  type: object
+  required:
+    - body
+  properties:
+    body:
+      type: string
+      minLength: 1
+      maxLength: 5000
+      example: Escalated to finance for manual verification.
+
+AdminInternalNote:
+  type: object
+  properties:
+    id:
+      type: string
+    body:
+      type: string
+    admin:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          nullable: true
+        email:
+          type: string
+    createdAt:
+      type: string
+      format: date-time
+
+AdminMessageListData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: './ticket.yaml#/PublicTicketMessage'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+AdminMessageListResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminMessageListData'
+
+AdminPublicReplyResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            message:
+              $ref: './ticket.yaml#/PublicTicketMessage'
+            lastMessageAt:
+              type: string
+              format: date-time
+
+AdminInternalNoteListData:
+  type: object
+  required:
+    - items
+    - pagination
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminInternalNote'
+    pagination:
+      $ref: './book.yaml#/PaginationMeta'
+
+AdminInternalNoteListResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminInternalNoteListData'
+
+AdminInternalNoteCreateResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          type: object
+          properties:
+            note:
+              $ref: '#/AdminInternalNote'
+
+AdminDashboardTicketSectionsData:
+  type: object
+  required:
+    - urgent
+    - oldestUnresolved
+    - recentlyUpdated
+  properties:
+    urgent:
+      type: array
+      items:
+        $ref: '#/AdminTicket'
+    oldestUnresolved:
+      type: array
+      items:
+        $ref: '#/AdminTicket'
+    recentlyUpdated:
+      type: array
+      items:
+        $ref: '#/AdminTicket'
+
+AdminDashboardTicketSectionsResponse:
+  allOf:
+    - $ref: './common.yaml#/ApiSuccessResponse'
+    - type: object
+      properties:
+        data:
+          $ref: '#/AdminDashboardTicketSectionsData'

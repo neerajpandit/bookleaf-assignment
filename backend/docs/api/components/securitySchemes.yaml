@@ -1,0 +1,20 @@
+CookieAuth:
+  type: apiKey
+  in: cookie
+  name: bookleaf_access_token
+  description: |
+    HttpOnly session cookie containing a signed JWT access token.
+
+    The token is set by `POST /api/v1/auth/login` and cleared by
+    `POST /api/v1/auth/logout`. It is **not** returned in JSON response bodies.
+
+    Browser clients must send credentialed requests (`credentials: 'include'`)
+    and include a valid CSRF header on state-changing requests.
+
+CsrfHeader:
+  type: apiKey
+  in: header
+  name: x-csrf-token
+  description: |
+    CSRF token issued by `GET /api/v1/auth/csrf-token`. Must match the
+    non-HttpOnly `bookleaf_csrf` cookie for state-changing authentication requests.

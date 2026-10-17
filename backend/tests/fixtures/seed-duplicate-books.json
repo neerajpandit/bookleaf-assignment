@@ -1,0 +1,48 @@
+{
+  "authors": [
+    {
+      "author_id": "AUTH001",
+      "name": "Priya Sharma",
+      "email": "priya.sharma@email.com",
+      "phone": "+91-98765-43210",
+      "city": "Mumbai",
+      "joined_date": "2023-03-15",
+      "books": [
+        {
+          "book_id": "BK001",
+          "title": "Book One",
+          "isbn": "978-93-5XXXX-01-1",
+          "genre": "Literary Fiction",
+          "publication_date": "2023-06-20",
+          "status": "Published & Live",
+          "mrp": 399,
+          "author_royalty_per_copy": 35,
+          "total_copies_sold": 1,
+          "total_royalty_earned": 35,
+          "royalty_paid": 35,
+          "royalty_pending": 0,
+          "last_royalty_payout_date": "2025-10-15",
+          "print_partner": "In-House",
+          "available_on": ["Amazon India"]
+        },
+        {
+          "book_id": "BK001",
+          "title": "Duplicate Book",
+          "isbn": "978-93-5XXXX-02-8",
+          "genre": "Literary Fiction",
+          "publication_date": "2023-06-20",
+          "status": "Published & Live",
+          "mrp": 399,
+          "author_royalty_per_copy": 35,
+          "total_copies_sold": 1,
+          "total_royalty_earned": 35,
+          "royalty_paid": 35,
+          "royalty_pending": 0,
+          "last_royalty_payout_date": "2025-10-15",
+          "print_partner": "In-House",
+          "available_on": ["Amazon India"]
+        }
+      ]
+    }
+  ]
+}
