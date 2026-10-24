@@ -14,7 +14,7 @@ import { validateCsrfForMutations } from '../middleware/csrf.js';
 
 const router = Router();
 
-router.use(validateCsrfForMutations);
+// router.use(validateCsrfForMutations);
 router.use(healthRoutes);
 router.use('/auth', authRouter);
 router.use('/books', bookRouter);

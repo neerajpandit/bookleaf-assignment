@@ -21,8 +21,8 @@ const { nodeEnv } = loadConfig();
 
 router.get('/csrf-token', getCsrfToken);
 
-router.post('/register',validateCsrf, validate(registerSchema), register);
-router.post('/login',validateCsrf, loginRateLimiter, validate(loginSchema), login);
+router.post('/register', validate(registerSchema), register);
+router.post('/login', loginRateLimiter, validate(loginSchema), login);
 router.get('/me', authenticate, me);
 router.post('/logout', authenticate, logout);
 
